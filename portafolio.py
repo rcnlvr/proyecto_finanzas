@@ -272,6 +272,14 @@ st.markdown("<div style='font-size:14px; color:#888; text-align:center; margin-t
 
 if len(simbolos) != len(pesos) or abs(sum(pesos) - 1) > 1e-6:
     st.sidebar.error("El número de símbolos debe coincidir con el número de pesos, y los pesos deben sumar 1.")
+    st.info(
+        "👋 **Configura tu portafolio en la barra lateral** para comenzar.\n\n"
+        "Asegúrate de que:\n"
+        "- Los símbolos estén separados por comas (ej. `SPY, GLD, IEI`)\n"
+        "- Los pesos estén separados por comas y **sumen 1** (ej. `0.5, 0.3, 0.2`)\n"
+        "- El número de símbolos coincida con el número de pesos"
+    )
+    st.stop()  #Detiene el app aquí en caso de no haber info
 else:
     # Obtener datos
     all_symbols = simbolos + [benchmark]
@@ -499,185 +507,185 @@ else:
 
 
 
-with tab3:
-    st.header("Análisis del Portafolio de Mínima Varianza")
+    with tab3:
+        st.header("Análisis del Portafolio de Mínima Varianza")
     
-    # Calcular los pesos óptimos
-    min_var_weights = calcular_minima_varianza(returns[simbolos])
+        # Calcular los pesos óptimos
+        min_var_weights = calcular_minima_varianza(returns[simbolos])
     
-    # Calcular métricas del portafolio de mínima varianza
-    min_var_returns = calcular_rendimientos_portafolio(returns[simbolos], min_var_weights)
-    min_var_cumulative = (1 + min_var_returns).cumprod() - 1
-    min_var_risk = np.sqrt(252) * min_var_returns.std()
-    min_var_mean_return = min_var_returns.mean() * 252  # Anualizado
+        # Calcular métricas del portafolio de mínima varianza
+        min_var_returns = calcular_rendimientos_portafolio(returns[simbolos], min_var_weights)
+        min_var_cumulative = (1 + min_var_returns).cumprod() - 1
+        min_var_risk = np.sqrt(252) * min_var_returns.std()
+        min_var_mean_return = min_var_returns.mean() * 252  # Anualizado
     
-    st.subheader("Pesos del Portafolio de Mínima Varianza")
-    weights_df = pd.DataFrame({
-        "ETF": simbolos,
-        "Peso Óptimo": min_var_weights
-    })
-    st.dataframe(weights_df.style.format({"Peso Óptimo": "{:.2%}"}))
+        st.subheader("Pesos del Portafolio de Mínima Varianza")
+        weights_df = pd.DataFrame({
+            "ETF": simbolos,
+            "Peso Óptimo": min_var_weights
+        })
+        st.dataframe(weights_df.style.format({"Peso Óptimo": "{:.2%}"}))
     
-    # Mostrar métricas clave
-    col1, col2 = st.columns(2)
-    col1.metric("Riesgo (Desviación Estándar Anualizada)", f"{min_var_risk:.2%}")
-    col2.metric("Rendimiento Esperado Anualizado", f"{min_var_mean_return:.2%}")
+        # Mostrar métricas clave
+        col1, col2 = st.columns(2)
+        col1.metric("Riesgo (Desviación Estándar Anualizada)", f"{min_var_risk:.2%}")
+        col2.metric("Rendimiento Esperado Anualizado", f"{min_var_mean_return:.2%}")
     
-    # Comparar rendimientos acumulados
-    fig_cumulative = go.Figure()
-    fig_cumulative.add_trace(go.Scatter(
-        x=min_var_cumulative.index, 
-        y=min_var_cumulative, 
-        name="Portafolio de Mínima Varianza",
-        line=dict(color='royalblue')
-    ))
-    fig_cumulative.add_trace(go.Scatter(
-        x=portfolio_cumulative_returns.index, 
-        y=portfolio_cumulative_returns, 
-        name="Portafolio Actual",
-        line=dict(color='orange', dash='dot')
-    ))
-    fig_cumulative.add_trace(go.Scatter(
-        x=cumulative_returns.index, 
-        y=cumulative_returns[benchmark], 
-        name=f"Benchmark: {selected_benchmark}",
-        line=dict(color='green', dash='dash')
-    ))
-    fig_cumulative.update_layout(
-        title="Comparación de Rendimientos Acumulados",
-        xaxis_title="Fecha",
-        yaxis_title="Rendimientos Acumulados",
-        plot_bgcolor='rgba(240,240,240,1)'
-    )
-    st.plotly_chart(fig_cumulative, use_container_width=True)
-    
-    # Distribución de rendimientos del portafolio de mínima varianza
-    var_95, cvar_95 = calcular_var_cvar(min_var_returns)
-    fig_dist = crear_histograma_distribucion(
-        min_var_returns,
-        var_95,
-        cvar_95,
-        title="Distribución de Retornos del Portafolio de Mínima Varianza"
-    )
-    st.plotly_chart(fig_dist, use_container_width=True)
+        # Comparar rendimientos acumulados
+        fig_cumulative = go.Figure()
+        fig_cumulative.add_trace(go.Scatter(
+            x=min_var_cumulative.index, 
+            y=min_var_cumulative, 
+            name="Portafolio de Mínima Varianza",
+            line=dict(color='royalblue')
+        ))
+        fig_cumulative.add_trace(go.Scatter(
+            x=portfolio_cumulative_returns.index, 
+            y=portfolio_cumulative_returns, 
+            name="Portafolio Actual",
+            line=dict(color='orange', dash='dot')
+        ))
+        fig_cumulative.add_trace(go.Scatter(
+            x=cumulative_returns.index, 
+            y=cumulative_returns[benchmark], 
+            name=f"Benchmark: {selected_benchmark}",
+            line=dict(color='green', dash='dash')
+        ))
+        fig_cumulative.update_layout(
+            title="Comparación de Rendimientos Acumulados",
+            xaxis_title="Fecha",
+            yaxis_title="Rendimientos Acumulados",
+            plot_bgcolor='rgba(240,240,240,1)'
+        )
+        st.plotly_chart(fig_cumulative, use_container_width=True)
+        
+        # Distribución de rendimientos del portafolio de mínima varianza
+        var_95, cvar_95 = calcular_var_cvar(min_var_returns)
+        fig_dist = crear_histograma_distribucion(
+            min_var_returns,
+            var_95,
+            cvar_95,
+            title="Distribución de Retornos del Portafolio de Mínima Varianza"
+        )
+        st.plotly_chart(fig_dist, use_container_width=True)
 
-with tab4:
-    st.header("Análisis del Portafolio de Máximo Sharpe Ratio")
+    with tab4:
+        st.header("Análisis del Portafolio de Máximo Sharpe Ratio")
+        
+        # Calcular los pesos óptimos
+        max_sharpe_weights = calcular_maximo_sharpe(returns[simbolos])
+        
+        # Calcular métricas del portafolio de máximo Sharpe Ratio
+        max_sharpe_returns = calcular_rendimientos_portafolio(returns[simbolos], max_sharpe_weights)
+        max_sharpe_cumulative = (1 + max_sharpe_returns).cumprod() - 1
+        max_sharpe_risk = np.sqrt(252) * max_sharpe_returns.std()
+        max_sharpe_mean_return = max_sharpe_returns.mean() * 252  # Anualizado
+        risk_free_rate = 0.02
+        max_sharpe_ratio = (max_sharpe_mean_return - risk_free_rate) / max_sharpe_risk
+        
+        st.subheader("Pesos del Portafolio de Máximo Sharpe Ratio")
+        weights_df = pd.DataFrame({
+            "ETF": simbolos,
+            "Peso Óptimo": max_sharpe_weights
+        })
+        st.dataframe(weights_df.style.format({"Peso Óptimo": "{:.2%}"}))
+        
+        # Mostrar métricas clave
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Riesgo (Desviación Estándar Anualizada)", f"{max_sharpe_risk:.2%}")
+        col2.metric("Rendimiento Esperado Anualizado", f"{max_sharpe_mean_return:.2%}")
+        col3.metric("Sharpe Ratio", f"{max_sharpe_ratio:.2f}")
+        
+        # Comparar rendimientos acumulados
+        fig_cumulative = go.Figure()
+        fig_cumulative.add_trace(go.Scatter(
+            x=max_sharpe_cumulative.index, 
+            y=max_sharpe_cumulative, 
+            name="Portafolio de Máximo Sharpe Ratio",
+            line=dict(color='gold')
+        ))
+        fig_cumulative.add_trace(go.Scatter(
+            x=portfolio_cumulative_returns.index, 
+            y=portfolio_cumulative_returns, 
+            name="Portafolio Actual",
+            line=dict(color='orange', dash='dot')
+        ))
+        fig_cumulative.add_trace(go.Scatter(
+            x=cumulative_returns.index, 
+            y=cumulative_returns[benchmark], 
+            name=f"Benchmark: {selected_benchmark}",
+            line=dict(color='green', dash='dash')
+        ))
+        fig_cumulative.update_layout(
+            title="Comparación de Rendimientos Acumulados",
+            xaxis_title="Fecha",
+            yaxis_title="Rendimientos Acumulados",
+            plot_bgcolor='rgba(240,240,240,1)'
+        )
+        st.plotly_chart(fig_cumulative, use_container_width=True)
+        
+        # Distribución de rendimientos del portafolio de máximo Sharpe Ratio
+        var_95, cvar_95 = calcular_var_cvar(max_sharpe_returns)
+        fig_dist = crear_histograma_distribucion(
+            max_sharpe_returns,
+            var_95,
+            cvar_95,
+            title="Distribución de Retornos del Portafolio de Máximo Sharpe Ratio"
+        )
+        st.plotly_chart(fig_dist, use_container_width=True)
     
-    # Calcular los pesos óptimos
-    max_sharpe_weights = calcular_maximo_sharpe(returns[simbolos])
+    with tab5:
+        st.header("Portafolio de Mínima Volatilidad con Objetivo de Rendimiento (MXN)")
     
-    # Calcular métricas del portafolio de máximo Sharpe Ratio
-    max_sharpe_returns = calcular_rendimientos_portafolio(returns[simbolos], max_sharpe_weights)
-    max_sharpe_cumulative = (1 + max_sharpe_returns).cumprod() - 1
-    max_sharpe_risk = np.sqrt(252) * max_sharpe_returns.std()
-    max_sharpe_mean_return = max_sharpe_returns.mean() * 252  # Anualizado
-    risk_free_rate = 0.02
-    max_sharpe_ratio = (max_sharpe_mean_return - risk_free_rate) / max_sharpe_risk
+        # Convertir los rendimientos a pesos mexicanos suponiendo un tipo de cambio simulado
+        tipo_cambio_usd_mxn = 17.0  # Puedes actualizar el tipo de cambio según sea necesario
+        returns_mxn = returns[simbolos] * tipo_cambio_usd_mxn
+        
+        # Calcular los pesos óptimos para el portafolio de mínima volatilidad con un rendimiento objetivo del 10%
+        min_vol_weights = calcular_minima_volatilidad_objetivo(returns_mxn)
     
-    st.subheader("Pesos del Portafolio de Máximo Sharpe Ratio")
-    weights_df = pd.DataFrame({
-        "ETF": simbolos,
-        "Peso Óptimo": max_sharpe_weights
-    })
-    st.dataframe(weights_df.style.format({"Peso Óptimo": "{:.2%}"}))
+        # Calcular métricas del portafolio de mínima volatilidad con rendimiento objetivo
+        min_vol_returns = calcular_rendimientos_portafolio(returns_mxn, min_vol_weights)
+        min_vol_cumulative = (1 + min_vol_returns).cumprod() - 1
+        min_vol_risk = np.sqrt(252) * min_vol_returns.std()
+        min_vol_mean_return = min_vol_returns.mean() * 252  # Anualizado
     
-    # Mostrar métricas clave
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Riesgo (Desviación Estándar Anualizada)", f"{max_sharpe_risk:.2%}")
-    col2.metric("Rendimiento Esperado Anualizado", f"{max_sharpe_mean_return:.2%}")
-    col3.metric("Sharpe Ratio", f"{max_sharpe_ratio:.2f}")
+        st.subheader("Pesos del Portafolio de Mínima Volatilidad con Objetivo de Rendimiento")
+        weights_df = pd.DataFrame({
+            "ETF": simbolos,
+            "Peso Óptimo": min_vol_weights
+        })
+        st.dataframe(weights_df.style.format({"Peso Óptimo": "{:.2%}"}))
     
-    # Comparar rendimientos acumulados
-    fig_cumulative = go.Figure()
-    fig_cumulative.add_trace(go.Scatter(
-        x=max_sharpe_cumulative.index, 
-        y=max_sharpe_cumulative, 
-        name="Portafolio de Máximo Sharpe Ratio",
-        line=dict(color='gold')
-    ))
-    fig_cumulative.add_trace(go.Scatter(
-        x=portfolio_cumulative_returns.index, 
-        y=portfolio_cumulative_returns, 
-        name="Portafolio Actual",
-        line=dict(color='orange', dash='dot')
-    ))
-    fig_cumulative.add_trace(go.Scatter(
-        x=cumulative_returns.index, 
-        y=cumulative_returns[benchmark], 
-        name=f"Benchmark: {selected_benchmark}",
-        line=dict(color='green', dash='dash')
-    ))
-    fig_cumulative.update_layout(
-        title="Comparación de Rendimientos Acumulados",
-        xaxis_title="Fecha",
-        yaxis_title="Rendimientos Acumulados",
-        plot_bgcolor='rgba(240,240,240,1)'
-    )
-    st.plotly_chart(fig_cumulative, use_container_width=True)
+        # Mostrar métricas clave
+        col1, col2 = st.columns(2)
+        col1.metric("Riesgo (Desviación Estándar Anualizada)", f"{min_vol_risk:.2%}")
+        col2.metric("Rendimiento Esperado Anualizado", f"{min_vol_mean_return:.2%}")
     
-    # Distribución de rendimientos del portafolio de máximo Sharpe Ratio
-    var_95, cvar_95 = calcular_var_cvar(max_sharpe_returns)
-    fig_dist = crear_histograma_distribucion(
-        max_sharpe_returns,
-        var_95,
-        cvar_95,
-        title="Distribución de Retornos del Portafolio de Máximo Sharpe Ratio"
-    )
-    st.plotly_chart(fig_dist, use_container_width=True)
-
-with tab5:
-    st.header("Portafolio de Mínima Volatilidad con Objetivo de Rendimiento (MXN)")
-
-    # Convertir los rendimientos a pesos mexicanos suponiendo un tipo de cambio simulado
-    tipo_cambio_usd_mxn = 17.0  # Puedes actualizar el tipo de cambio según sea necesario
-    returns_mxn = returns[simbolos] * tipo_cambio_usd_mxn
-    
-    # Calcular los pesos óptimos para el portafolio de mínima volatilidad con un rendimiento objetivo del 10%
-    min_vol_weights = calcular_minima_volatilidad_objetivo(returns_mxn)
-
-    # Calcular métricas del portafolio de mínima volatilidad con rendimiento objetivo
-    min_vol_returns = calcular_rendimientos_portafolio(returns_mxn, min_vol_weights)
-    min_vol_cumulative = (1 + min_vol_returns).cumprod() - 1
-    min_vol_risk = np.sqrt(252) * min_vol_returns.std()
-    min_vol_mean_return = min_vol_returns.mean() * 252  # Anualizado
-
-    st.subheader("Pesos del Portafolio de Mínima Volatilidad con Objetivo de Rendimiento")
-    weights_df = pd.DataFrame({
-        "ETF": simbolos,
-        "Peso Óptimo": min_vol_weights
-    })
-    st.dataframe(weights_df.style.format({"Peso Óptimo": "{:.2%}"}))
-
-    # Mostrar métricas clave
-    col1, col2 = st.columns(2)
-    col1.metric("Riesgo (Desviación Estándar Anualizada)", f"{min_vol_risk:.2%}")
-    col2.metric("Rendimiento Esperado Anualizado", f"{min_vol_mean_return:.2%}")
-
-    # Comparar rendimientos acumulados
-    fig_cumulative = go.Figure()
-    fig_cumulative.add_trace(go.Scatter(
-        x=min_vol_cumulative.index, 
-        y=min_vol_cumulative, 
-        name="Portafolio de Mínima Volatilidad con Objetivo",
-        line=dict(color='blue')
-    ))
-    fig_cumulative.add_trace(go.Scatter(
-        x=portfolio_cumulative_returns.index, 
-        y=portfolio_cumulative_returns, 
-        name="Portafolio Actual",
-        line=dict(color='orange', dash='dot')
-    ))
-    fig_cumulative.add_trace(go.Scatter(
-        x=cumulative_returns.index, 
-        y=cumulative_returns[benchmark], 
-        name=f"Benchmark: {selected_benchmark}",
-        line=dict(color='green', dash='dash')
-    ))
-    fig_cumulative.update_layout(
-        title="Comparación de Rendimientos Acumulados",
-        xaxis_title="Fecha",
-        yaxis_title="Rendimientos Acumulados",
-        plot_bgcolor='rgba(240,240,240,1)'
-    )
-    st.plotly_chart(fig_cumulative, use_container_width=True)
+        # Comparar rendimientos acumulados
+        fig_cumulative = go.Figure()
+        fig_cumulative.add_trace(go.Scatter(
+            x=min_vol_cumulative.index, 
+            y=min_vol_cumulative, 
+            name="Portafolio de Mínima Volatilidad con Objetivo",
+            line=dict(color='blue')
+        ))
+        fig_cumulative.add_trace(go.Scatter(
+            x=portfolio_cumulative_returns.index, 
+            y=portfolio_cumulative_returns, 
+            name="Portafolio Actual",
+            line=dict(color='orange', dash='dot')
+        ))
+        fig_cumulative.add_trace(go.Scatter(
+            x=cumulative_returns.index, 
+            y=cumulative_returns[benchmark], 
+            name=f"Benchmark: {selected_benchmark}",
+            line=dict(color='green', dash='dash')
+        ))
+        fig_cumulative.update_layout(
+            title="Comparación de Rendimientos Acumulados",
+            xaxis_title="Fecha",
+            yaxis_title="Rendimientos Acumulados",
+            plot_bgcolor='rgba(240,240,240,1)'
+        )
+        st.plotly_chart(fig_cumulative, use_container_width=True)
