@@ -209,7 +209,34 @@ def calcular_maximo_sharpe(returns, risk_free_rate=0.02):
     result = minimize(negative_sharpe_ratio, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
     
     return result.x  #
+
+@st.cache_data(ttl=86400)  # cachea 24h para no pegarle a Yahoo en cada rerun
+def obtener_info_etf(simbolo):
+    try:
+        info = yf.Ticker(simbolo).info
         
+        # Expense ratio: puede venir como 0.0015 o como 0.15
+        er = info.get("netExpenseRatio") or info.get("annualReportExpenseRatio")
+        if er is None:
+            costos = "N/D"
+        elif er < 1:
+            costos = f"{er*100:.2f}%"
+        else:
+            costos = f"{er:.2f}%"
+        
+        return {
+            "nombre": info.get("longName") or info.get("shortName") or "N/D",
+            "exposicion": info.get("longBusinessSummary") or "N/D",
+            "categoria": info.get("category") or "N/D",
+            "familia": info.get("fundFamily") or "N/D",
+            "moneda": info.get("currency") or "N/D",
+            "pais": info.get("country") or info.get("region") or "Global",
+            "costos": costos,
+            "aum": info.get("totalAssets"),
+            "yield": info.get("yield"),
+        }
+    except Exception as e:
+        return {"error": f"No se pudo obtener info de {simbolo}: {e}"}
 
 
 # ETFs permitidos y datos
@@ -258,73 +285,40 @@ else:
     # Crear pestañas
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["Análisis de Activos Individuales", "Análisis del Portafolio", "Portafolio Mínima Varianza", "Portafolio Max Sharpe Ratio","Portafolio Mínima Vol 10% obj"])
 
-    etf_summaries = {
-        "IEI": {
-            "nombre": "iShares 3-7 Year Treasury Bond ETF",
-            "exposicion": "Bonos del Tesoro de EE. UU. con vencimientos entre 3 y 7 años",
-            "indice": "ICE U.S. Treasury 3-7 Year Bond Index",
-            "moneda": "USD",
-            "pais": "Estados Unidos",
-            "estilo": "Renta fija desarrollada",
-            "costos": "0.15%",
-        },
-        "EMB": {
-            "nombre": "iShares J.P. Morgan USD Emerging Markets Bond ETF",
-            "exposicion": "Bonos soberanos y cuasi-soberanos de mercados emergentes",
-            "indice": "J.P. Morgan EMBI Global Core Index",
-            "moneda": "USD",
-            "pais": "Diversos mercados emergentes (Brasil, México, Sudáfrica, etc.)",
-            "estilo": "Renta fija emergente",
-            "costos": "0.39%",
-        },
-        "SPY": {
-            "nombre": "SPDR S&P 500 ETF Trust",
-            "exposicion": "500 empresas más grandes de Estados Unidos",
-            "indice": "S&P 500 Index",
-            "moneda": "USD",
-            "pais": "Estados Unidos",
-            "estilo": "Renta variable desarrollada",
-            "costos": "0.09%",
-        },
-        "IEMG": {
-            "nombre": "iShares Core MSCI Emerging Markets ETF",
-            "exposicion": "Empresas de gran y mediana capitalización en mercados emergentes",
-            "indice": "MSCI Emerging Markets Investable Market Index",
-            "moneda": "USD",
-            "pais": "China, India, Brasil, y otros mercados emergentes",
-            "estilo": "Renta variable emergente",
-            "costos": "0.11%",
-        },
-        "GLD": {
-            "nombre": "SPDR Gold Shares",
-            "exposicion": "Precio del oro físico (lingotes almacenados en bóvedas)",
-            "indice": "Precio spot del oro",
-            "moneda": "USD",
-            "pais": "Exposición global",
-            "estilo": "Materias primas",
-            "costos": "0.40%",
-        }
-        }
-
     with tab1:
-        
         
         st.header("Análisis de Activos Individuales")
         selected_asset = st.selectbox("Seleccione un ETF para analizar:", simbolos)
 
         if selected_asset:
-            # Resumen del ETF
-            st.subheader(f"Resumen del ETF: {selected_asset}")
-            summary = etf_summaries[selected_asset]
-            st.markdown(f"""
-            - **Nombre:** {summary['nombre']}
-            - **Exposición:** {summary['exposicion']}
-            - **Índice que sigue:** {summary['indice']}
-            - **Moneda de denominación:** {summary['moneda']}
-            - **País o región principal:** {summary['pais']}
-            - **Estilo:** {summary['estilo']}
-            - **Costos:** {summary['costos']}
-            """)
+           st.subheader(f"Resumen del ETF: {selected_asset}")
+        
+           with st.spinner("Consultando Yahoo Finance..."):
+               summary = obtener_info_etf(selected_asset)
+        
+           if "error" in summary:
+               st.warning(summary["error"])
+           else:
+            # Bloque principal
+               st.markdown(f"""
+               - **Nombre:** {summary['nombre']}
+               - **Moneda de denominación:** {summary['moneda']}
+               - **País o región principal:** {summary['pais']}
+               - **Categoría:** {summary['categoria']}
+               - **Familia del fondo:** {summary['familia']}
+               - **Costos (expense ratio):** {summary['costos']}
+               """)
+            
+               # AUM y Yield en métricas
+               col_a, col_b = st.columns(2)
+               if summary.get("aum"):
+                   col_a.metric("Activos bajo gestión (AUM)", f"${summary['aum']/1e9:.2f}B")
+               if summary.get("yield"):
+                   col_b.metric("Dividend Yield", f"{summary['yield']*100:.2f}%")
+            
+            # Descripción en expander para no saturar la vista
+               with st.expander("📄 Descripción del fondo"):
+                   st.write(summary["exposicion"])
 
         # Cálculos métricos
         var_95, cvar_95 = calcular_var_cvar(returns[selected_asset])
