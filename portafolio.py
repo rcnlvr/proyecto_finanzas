@@ -256,10 +256,6 @@ pesos_input = st.sidebar.text_input(
 simbolos = [s.strip() for s in simbolos_input.split(',') if s.strip()]  # Sin validación
 pesos = [float(w.strip()) for w in pesos_input.split(',') if w.strip()]
 
-else:
-    # Todo OK: corre la app normalmente
-    all_symbols = simbolos + [benchmark]
-
 # Selección del benchmark
 benchmark_options = {
     "S&P 500": "^GSPC",
