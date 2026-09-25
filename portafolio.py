@@ -253,8 +253,40 @@ pesos_input = st.sidebar.text_input(
     ""  # Input vacío
 )
 
-simbolos = [s.strip() for s in simbolos_input.split(',') if s.strip()]  # Sin validación
-pesos = [float(w.strip()) for w in pesos_input.split(',') if w.strip()]
+#simbolos = [s.strip() for s in simbolos_input.split(',') if s.strip()]  # Sin validación
+#pesos = [float(w.strip()) for w in pesos_input.split(',') if w.strip()]
+
+# Parseo seguro de símbolos
+simbolos = [s.strip().upper() for s in simbolos_input.split(',') if s.strip()]
+
+# Parseo seguro de pesos (evita crash si escriben texto)
+try:
+    pesos = [float(w.strip()) for w in pesos_input.split(',') if w.strip()]
+except ValueError:
+    pesos = []
+
+# Validación con tres escenarios
+if not simbolos_input.strip() or not pesos_input.strip():
+    # Caso 1: el usuario aún no configura nada
+    st.info("👋 **Configura tu portafolio en la barra lateral** para comenzar.\n\n"
+            "- Escribe los símbolos separados por comas (ej. `SPY, GLD, IEI`)\n"
+            "- Escribe los pesos separados por comas (deben sumar 1)")
+    st.stop()
+
+elif len(simbolos) != len(pesos) or abs(sum(pesos) - 1) > 1e-6:
+    # Caso 2: el usuario escribió algo pero está mal
+    st.sidebar.error("⚠️ La configuración no es válida.")
+    st.error(
+        f"**Revisa tu configuración:**\n\n"
+        f"- Símbolos detectados: **{len(simbolos)}** ({', '.join(simbolos) if simbolos else 'ninguno'})\n"
+        f"- Pesos detectados: **{len(pesos)}** → suma = **{sum(pesos):.4f}**\n\n"
+        f"Asegúrate de que el número de símbolos coincida con el de pesos y que estos sumen exactamente **1**."
+    )
+    st.stop()
+
+else:
+    # Todo OK: corre la app normalmente
+    all_symbols = simbolos + [benchmark]
 
 # Selección del benchmark
 benchmark_options = {
